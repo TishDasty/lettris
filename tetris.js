@@ -1,5 +1,13 @@
 'use strict';
 
+const blockImages = {};
+
+['I', 'J', 'L', 'O', 'S', 'T', 'Z'].forEach(type => {
+  const img = new Image();
+  img.src = `img/${type}.png`; // путь к картинке
+  blockImages[type] = img;
+});
+
 // Получаем элементы
 const canvas = document.getElementById('tetris');
 const context = canvas.getContext('2d');
