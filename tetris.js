@@ -349,4 +349,37 @@ document.addEventListener('keydown', event => {
       break;
   }
 });
+let touchStartX = 0;
+let touchStartY = 0;
+
+gameCanvas.addEventListener("touchstart", (e) => {
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+}, { passive: true });
+
+gameCanvas.addEventListener("touchend", (e) => {
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartX;
+    const dy = touch.clientY - touchStartY;
+
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (Math.max(absDx, absDy) > 20) { // минимальный свайп
+        if (absDx > absDy) {
+            if (dx > 0) {
+                moveRight(); // свайп вправо
+            } else {
+                moveLeft(); // свайп влево
+            }
+        } else {
+            if (dy > 0) {
+                moveDown(); // свайп вниз — ускорить
+            } else {
+                rotate(); // свайп вверх — поворот
+            }
+        }
+    }
+}, { passive: true });
 
