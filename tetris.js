@@ -66,6 +66,35 @@ const pieces = {
   ]
 };
 
+// Загрузка картинок для блоков
+const blockImages = [];
+for(let i = 1; i <= 7; i++){
+  blockImages[i] = new Image();
+  blockImages[i].src = `img/I.png`; // Убедись, что пути и имена совпадают с твоими файлами
+}
+
+// Функция отрисовки матрицы с картинками
+function drawMatrix(matrix, offset) {
+  matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if(value !== 0){
+        const img = blockImages[value];
+        if(img && img.complete){
+          // Учитываем масштаб 20, чтобы размер блока был 20x20 пикселей
+          context.drawImage(img, (x + offset.x) * 20, (y + offset.y) * 20, 20, 20);
+        } else {
+          // Если картинка еще не загрузилась, рисуем цветной квадрат-заглушку
+          context.fillStyle = '#ccc';
+          context.fillRect(x + offset.x, y + offset.y, 1, 1);
+          context.strokeStyle = '#222';
+          context.lineWidth = 0.05;
+          context.strokeRect(x + offset.x, y + offset.y, 1, 1);
+        }
+      }
+    });
+  });
+}
+
 // Цвета для фигур (индекс — номер фигуры)
 const colors = [
   null,
