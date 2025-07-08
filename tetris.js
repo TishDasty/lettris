@@ -273,4 +273,44 @@ canvas.addEventListener('touchmove', e => {
   const diffX = touch.clientX - touchStartX;
   const diffY = touch.clientY - touchStartY;
 
-  if (
+  if (Math.abs(diffX) > swipeThreshold && Math.abs(diffX) > Math.abs(diffY)) {
+    if (diffX > 0) {
+      playerMove(1);
+    } else {
+      playerMove(-1);
+    }
+    touchStartX = touch.clientX;
+  } else if (
+    Math.abs(diffY) > swipeThreshold &&
+    Math.abs(diffY) > Math.abs(diffX)
+  ) {
+    if (diffY > 0) {
+      playerDrop();
+      touchStartY = touch.clientY;
+    }
+  }
+  e.preventDefault();
+});
+
+canvas.addEventListener('touchend', e => {
+  if (gameOver) return;
+  // Если был тап (без большого движения) — вращаем фигуру
+  playerRotate(1);
+  e.preventDefault();
+});
+
+// Кнопка Старт
+startBtn.addEventListener('click', () => {
+  if (!gameOver) {
+    // Если игра идёт, сбросить и начать заново
+    arena.forEach(row => row.fill(0));
+    score = 0;
+    updateScore();
+    dropInterval = 1000;
+  }
+  gameOver = false;
+  resetPlayer();
+  dropCounter = 0;
+  lastTime = 0;
+  update();
+});
