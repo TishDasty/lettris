@@ -100,13 +100,21 @@ function drawMatrix(matrix, offset) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
       if(value !== 0){
-        const name = pieceIndexToName[value]; // получаем букву фигуры по номеру
-        const img = blockImages[name];
-        if(img && img.complete){
-          context.drawImage(img, (x + offset.x) * 20, (y + offset.y) * 20, 20, 20);
+        // Найдем тип фигуры по числу (значению)
+        const type = getTypeByValue(value); // функция ниже
+
+        // Если есть картинка — рисуем её
+        if(blockImages[type] && blockImages[type].complete){
+          context.drawImage(
+            blockImages[type],
+            (x + offset.x) * 20,  // 20 — масштаб (помни, что у тебя context.scale(20,20))
+            (y + offset.y) * 20,
+            20,
+            20
+          );
         } else {
-          // Если картинка не загрузилась — рисуем заглушку
-          context.fillStyle = '#ccc';
+          // Если картинки нет — рисуем цветной квадрат (фолбек)
+          context.fillStyle = colors[value];
           context.fillRect(x + offset.x, y + offset.y, 1, 1);
           context.strokeStyle = '#222';
           context.lineWidth = 0.05;
@@ -116,6 +124,20 @@ function drawMatrix(matrix, offset) {
     });
   });
 }
+
+function getTypeByValue(value) {
+  switch(value) {
+    case 1: return 'I';
+    case 2: return 'J';
+    case 3: return 'L';
+    case 4: return 'O';
+    case 5: return 'S';
+    case 6: return 'T';
+    case 7: return 'Z';
+    default: return null;
+  }
+}
+
 
 // Цвета для фигур (индекс — номер фигуры)
 const colors = [
