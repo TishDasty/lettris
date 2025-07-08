@@ -1,17 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>Lettris</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tetris Telegram WebApp</title>
+<style>
+  body {
+    background: #222;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0; padding: 0;
+    user-select: none;
+  }
+  #tetris {
+    margin: 20px auto;
+    position: relative;
+    width: 240px; /* 10 ячеек * 24px */
+  }
+  canvas {
+    border: 2px solid #444;
+    background: #111;
+    display: block;
+    margin: 0 auto;
+    touch-action: none; /* для тач-событий */
+  }
+  #startBtn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    background: #0088ff;
+    border: none;
+    border-radius: 6px;
+    color: white;
+  }
+  #score {
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <div id="tetris-container">
-    <canvas id="tetris" width="240" height="400"></canvas>
-    <div id="score">Счёт: 0</div>
-  </div>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="tetris.js"></script>
+<div id="tetris">
+  <canvas id="tetrisCanvas" width="240" height="480"></canvas>
+  <button id="startBtn">Старт</button>
+  <div id="score">Очки: 0</div>
+</div>
+
+<script src="tetris.js"></script>
 </body>
 </html>
