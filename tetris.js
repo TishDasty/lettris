@@ -75,13 +75,16 @@ function playerMove(offset) {
 
 function playerRotate(dir) {
   const pos = player.pos.x;
+  rotate(player.matrix, dir);
+
   let offset = 1;
-  rotateMatrix(player.matrix, dir);
+  const maxOffset = player.matrix[0].length; // максимальный сдвиг равен ширине фигуры
   while (collide(arena, player)) {
     player.pos.x += offset;
     offset = -(offset + (offset > 0 ? 1 : -1));
-    if (offset > player.matrix[0].length) {
-      rotateMatrix(player.matrix, -dir);
+    if (Math.abs(offset) > maxOffset) {
+      // Сдвигов не хватило — откатываем поворот
+      rotate(player.matrix, -dir);
       player.pos.x = pos;
       return;
     }
