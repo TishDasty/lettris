@@ -1,7 +1,5 @@
 'use strict';
 
-const blockImages = {};
-
 ['I', 'J', 'L', 'O', 'S', 'T', 'Z'].forEach(type => {
   const img = new Image();
   img.src = `img/${type}.png`; // путь к картинке
@@ -96,6 +94,7 @@ pieceNames.forEach(name => {
   blockImages[name] = img;
 });
 
+// Отрисовка матрицы (игрового поля или фигуры)
 function drawMatrix(matrix, offset) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
@@ -167,21 +166,6 @@ const player = {
   matrix: null,
   score: 0
 };
-
-// Отрисовка матрицы (игрового поля или фигуры)
-function drawMatrix(matrix, offset) {
-  matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if(value !== 0){
-        context.fillStyle = colors[value];
-        context.fillRect(x + offset.x, y + offset.y, 1, 1);
-        context.strokeStyle = '#222';
-        context.lineWidth = 0.05;
-        context.strokeRect(x + offset.x, y + offset.y, 1, 1);
-      }
-    });
-  });
-}
 
 // Очистка канваса
 function clear() {
