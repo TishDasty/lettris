@@ -1,78 +1,108 @@
+'use strict';
+
+// Получаем элементы
 const canvas = document.getElementById('tetris');
 const context = canvas.getContext('2d');
-context.scale(20, 20);
+context.scale(20, 20); // масштабируем для удобства
 
-const ROWS = 20;
-const COLS = 12;
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+const downBtn = document.getElementById('downBtn');
+const rotateBtn = document.getElementById('rotateBtn');
+const scoreElem = document.getElementById('score');
 
+const arenaWidth = 12;
+const arenaHeight = 20;
+
+// Игровое поле (арена)
 function createMatrix(w, h) {
   const matrix = [];
-  while (h--) matrix.push(new Array(w).fill(0));
+  while (h--) {
+    matrix.push(new Array(w).fill(0));
+  }
   return matrix;
 }
 
-const arena = createMatrix(COLS, ROWS);
+const arena = createMatrix(arenaWidth, arenaHeight);
 
-const colors = [
-  null,
-  '#00f0f0', // I
-  '#0000f0', // J
-  '#f0a000', // L
-  '#f0f000', // O
-  '#00f000', // S
-  '#a000f0', // T
-  '#f00000'  // Z
-];
-
+// Фигуры: 7 классических
 const pieces = {
   'I': [
     [0,0,0,0],
     [1,1,1,1],
     [0,0,0,0],
-    [0,0,0,0],
+    [0,0,0,0]
   ],
   'J': [
     [2,0,0],
     [2,2,2],
-    [0,0,0],
+    [0,0,0]
   ],
   'L': [
     [0,0,3],
     [3,3,3],
-    [0,0,0],
+    [0,0,0]
   ],
   'O': [
     [4,4],
-    [4,4],
+    [4,4]
   ],
   'S': [
     [0,5,5],
     [5,5,0],
-    [0,0,0],
+    [0,0,0]
   ],
   'T': [
     [0,6,0],
     [6,6,6],
-    [0,0,0],
+    [0,0,0]
   ],
   'Z': [
     [7,7,0],
     [0,7,7],
-    [0,0,0],
+    [0,0,0]
   ]
 };
 
-function createPiece(type) {
-  return pieces[type].map(row => row.slice());
-}
+// Цвета для фигур (индекс — номер фигуры)
+const colors = [
+  null,
+  '#00ffff', // I — голубой
+  '#0000ff', // J — синий
+  '#ffa500', // L — оранжевый
+  '#ffff00', // O — желтый
+  '#00ff00', // S — зеленый
+  '#800080', // T — фиолетовый
+  '#ff0000'  // Z — красный
+];
 
+let dropCounter = 0;
+let dropInterval = 1000; // начальная скорость — 1 секунда
+let lastTime = 0;
+let gameRunning = false;
+let paused = false;
+
+let score = 0;
+let level = 1;
+let linesCleared = 0;
+
+// Игрок (фигура)
+const player = {
+  pos: {x: 0, y: 0},
+  matrix: null,
+  score: 0
+};
+
+// Отрисовка матрицы (игрового поля или фигуры)
 function drawMatrix(matrix, offset) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (value !== 0) {
+      if(value !== 0){
         context.fillStyle = colors[value];
         context.fillRect(x + offset.x, y + offset.y, 1, 1);
-        context.strokeStyle = '#000';
+        context.strokeStyle = '#222';
         context.lineWidth = 0.05;
         context.strokeRect(x + offset.x, y + offset.y, 1, 1);
       }
@@ -80,67 +110,114 @@ function drawMatrix(matrix, offset) {
   });
 }
 
+// Очистка канваса
+function clear() {
+  context.fillStyle = '#111';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// Отрисовка сцены
+function draw() {
+  clear();
+  drawMatrix(arena, {x:0, y:0});
+  drawMatrix(player.matrix, player.pos);
+}
+
+// Проверка столкновений
+function collide(arena, player) {
+  const m = player.matrix;
+  const o = player.pos;
+  for(let y = 0; y < m.length; ++y){
+    for(let x = 0; x < m[y].length; ++x){
+      if(m[y][x] !== 0 &&
+        (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0){
+          return true;
+        }
+    }
+  }
+  return false;
+}
+
+// Слияние фигуры с ареной после падения
 function merge(arena, player) {
   player.matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if (value !== 0) {
+      if(value !== 0){
         arena[y + player.pos.y][x + player.pos.x] = value;
       }
     });
   });
 }
 
-function collide(arena, player) {
-  const m = player.matrix;
-  const o = player.pos;
-  for (let y = 0; y < m.length; ++y) {
-    for (let x = 0; x < m[y].length; ++x) {
-      if (
-        m[y][x] !== 0 &&
-        (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0
-      ) {
-        return true;
+// Очистка заполненных линий и подсчет очков
+function arenaSweep() {
+  let rowCount = 0;
+  outer: for(let y = arena.length -1; y >= 0; --y){
+    for(let x = 0; x < arena[y].length; ++x){
+      if(arena[y][x] === 0){
+        continue outer;
       }
     }
+    const row = arena.splice(y, 1)[0].fill(0);
+    arena.unshift(row);
+    y++;
+    rowCount++;
   }
-  return false;
-}
-
-function playerReset() {
-  const piecesTypes = 'TJLOSZI';
-  player.matrix = createPiece(piecesTypes[(piecesTypes.length * Math.random()) | 0]);
-  player.pos.y = 0;
-  player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
-  if (collide(arena, player)) {
-    arena.forEach(row => row.fill(0));
-    score = 0;
+  if(rowCount > 0){
+    linesCleared += rowCount;
+    score += calculateScore(rowCount, level);
+    updateLevel();
     updateScore();
-    dropInterval = 1000;
-    pauseGame();
+    // Увеличиваем скорость
+    dropInterval = Math.max(100, 1000 - (level - 1)*100);
   }
 }
 
+// Подсчет очков по числу линий и уровню
+function calculateScore(rows, level) {
+  const scoring = [0, 40, 100, 300, 1200];
+  return scoring[rows] * level;
+}
+
+// Обновление уровня и скорости
+function updateLevel() {
+  level = Math.floor(linesCleared / 10) + 1;
+}
+
+// Обновление текста счета
+function updateScore() {
+  scoreElem.textContent = `Очки: ${score} (Уровень: ${level})`;
+}
+
+// Вращение матрицы (фигуры)
 function rotate(matrix, dir) {
-  for (let y = 0; y < matrix.length; ++y) {
-    for (let x = 0; x < y; ++x) {
-      [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+  for(let y = 0; y < matrix.length; ++y){
+    for(let x = 0; x < y; ++x){
+      [
+        matrix[x][y],
+        matrix[y][x]
+      ] = [
+        matrix[y][x],
+        matrix[x][y]
+      ];
     }
   }
-  if (dir > 0) {
+  if(dir > 0){
     matrix.forEach(row => row.reverse());
   } else {
     matrix.reverse();
   }
 }
 
+// Попытка повернуть фигуру с учётом коллизий (wall kicks)
 function playerRotate(dir) {
   const pos = player.pos.x;
   let offset = 1;
   rotate(player.matrix, dir);
-  while (collide(arena, player)) {
+  while(collide(arena, player)){
     player.pos.x += offset;
     offset = -(offset + (offset > 0 ? 1 : -1));
-    if (offset > player.matrix[0].length) {
+    if(offset > player.matrix[0].length){
       rotate(player.matrix, -dir);
       player.pos.x = pos;
       return;
@@ -148,175 +225,128 @@ function playerRotate(dir) {
   }
 }
 
-function arenaSweep() {
-  let rowCount = 0;
-  outer: for (let y = arena.length - 1; y >= 0; --y) {
-    for (let x = 0; x < arena[y].length; ++x) {
-      if (arena[y][x] === 0) {
-        continue outer;
-      }
-    }
-    const row = arena.splice(y, 1)[0].fill(0);
-    arena.unshift(row);
-    ++y;
-    rowCount++;
-  }
-  if (rowCount > 0) {
-    score += rowCount * rowCount * 100;
-    updateScore();
-    dropInterval = Math.max(100, dropInterval - rowCount * 20);
+// Создание новой фигуры
+function createPiece(type) {
+  return pieces[type];
+}
+
+// Сброс фигуры игрока в верхнее положение с новой фигурой
+function playerReset() {
+  const piecesTypes = 'TJLOSZI';
+  player.matrix = createPiece(piecesTypes[Math.floor(Math.random() * piecesTypes.length)]);
+  player.pos.y = 0;
+  player.pos.x = Math.floor((arenaWidth / 2) - Math.floor(player.matrix[0].length / 2));
+  if(collide(arena, player)){
+    arena.forEach(row => row.fill(0)); // Очистка поля — конец игры
+    alert('Игра окончена! Твой счёт: ' + score);
+    gameRunning = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
   }
 }
 
-function draw() {
-  context.fillStyle = '#222';
-  context.fillRect(0, 0, canvas.width / 20, canvas.height / 20);
-  drawMatrix(arena, { x: 0, y: 0 });
-  drawMatrix(player.matrix, player.pos);
+// Движение фигуры вниз (с падением)
+function playerDrop() {
+  player.pos.y++;
+  if(collide(arena, player)){
+    player.pos.y--;
+    merge(arena, player);
+    arenaSweep();
+    playerReset();
+  }
+  dropCounter = 0;
 }
 
+// Движение фигуры влево или вправо
+function playerMove(dir) {
+  player.pos.x += dir;
+  if(collide(arena, player)){
+    player.pos.x -= dir;
+  }
+}
+
+// Основной цикл игры с анимацией
 function update(time = 0) {
-  if (!gameRunning) return;
-
+  if(!gameRunning || paused){
+    lastTime = time;
+    requestAnimationFrame(update);
+    return;
+  }
   const deltaTime = time - lastTime;
   lastTime = time;
 
   dropCounter += deltaTime;
-  if (dropCounter > dropInterval) {
+  if(dropCounter > dropInterval){
     playerDrop();
-    dropCounter = 0;
   }
 
   draw();
   requestAnimationFrame(update);
 }
 
-function playerDrop() {
-  player.pos.y++;
-  if (collide(arena, player)) {
-    player.pos.y--;
-    merge(arena, player);
-    arenaSweep();
-    playerReset();
-  }
-}
-
-function updateScore() {
-  document.getElementById('score').innerText = score;
-}
-
-function pauseGame() {
-  gameRunning = false;
-  startBtn.disabled = false;
-  pauseBtn.disabled = true;
-  pauseBtn.textContent = 'Пауза';
-}
-
-function startGame() {
-  gameRunning = true;
-  startBtn.disabled = true;
-  pauseBtn.disabled = false;
-  pauseBtn.textContent = 'Пауза';
-  score = 0;
-  updateScore();
-  dropInterval = 1000;
-  dropCounter = 0;
-  lastTime = performance.now();
-  playerReset();
-  update();
-}
-
-// Сенсорное управление (свайпы)
-let touchStartX = 0;
-let touchStartY = 0;
-let touchEndX = 0;
-let touchEndY = 0;
-
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  const touch = e.changedTouches[0];
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
-});
-
-canvas.addEventListener('touchend', e => {
-  e.preventDefault();
-  if (!gameRunning) return;
-  const touch = e.changedTouches[0];
-  touchEndX = touch.clientX;
-  touchEndY = touch.clientY;
-
-  const dx = touchEndX - touchStartX;
-  const dy = touchEndY - touchStartY;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (dx > 20) {
-      // свайп вправо
-      moveRight();
-    } else if (dx < -20) {
-      // свайп влево
-      moveLeft();
-    }
-  } else {
-    if (dy > 20) {
-      // свайп вниз (ускоренный сброс)
-      playerDrop();
-    } else if (dy < -20) {
-      // свайп вверх (поворот)
-      playerRotate(1);
-    }
-  }
-});
-
-function moveLeft() {
-  player.pos.x--;
-  if (collide(arena, player)) player.pos.x++;
-}
-
-function moveRight() {
-  player.pos.x++;
-  if (collide(arena, player)) player.pos.x--;
-}
-
-document.addEventListener('keydown', e => {
-  if (!gameRunning) return;
-  if (e.key === 'ArrowLeft') {
-    moveLeft();
-  } else if (e.key === 'ArrowRight') {
-    moveRight();
-  } else if (e.key === 'ArrowDown') {
-    playerDrop();
-  } else if (e.key === 'ArrowUp') {
-    playerRotate(1);
-  }
-});
-
-const startBtn = document.getElementById('startBtn');
-const pauseBtn = document.getElementById('pauseBtn');
-
+// Управление кнопками и клавиатурой
 startBtn.addEventListener('click', () => {
-  if (!gameRunning) startGame();
-});
-
-pauseBtn.addEventListener('click', () => {
-  if (gameRunning) {
-    gameRunning = false;
-    pauseBtn.textContent = 'Продолжить';
-  } else {
+  if(!gameRunning){
     gameRunning = true;
+    paused = false;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
     pauseBtn.textContent = 'Пауза';
-    lastTime = performance.now();
+    score = 0;
+    linesCleared = 0;
+    level = 1;
+    dropInterval = 1000;
+    dropCounter = 0;
+    updateScore();
+    arena.forEach(row => row.fill(0));
+    playerReset();
     update();
   }
 });
 
-let dropCounter = 0;
-let dropInterval = 1000;
-let lastTime = 0;
-let score = 0;
-let gameRunning = false;
+pauseBtn.addEventListener('click', () => {
+  if(!gameRunning) return;
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Продолжить' : 'Пауза';
+});
 
-const player = {
-  pos: { x: 0, y: 0 },
-  matrix: null,
-};
+leftBtn.addEventListener('click', () => {
+  if(gameRunning && !paused) playerMove(-1);
+});
+
+rightBtn.addEventListener('click', () => {
+  if(gameRunning && !paused) playerMove(1);
+});
+
+downBtn.addEventListener('click', () => {
+  if(gameRunning && !paused) playerDrop();
+});
+
+rotateBtn.addEventListener('click', () => {
+  if(gameRunning && !paused) playerRotate(1);
+});
+
+// Поддержка клавиатуры
+document.addEventListener('keydown', event => {
+  if(!gameRunning || paused) return;
+  switch(event.key){
+    case 'ArrowLeft':
+      playerMove(-1);
+      break;
+    case 'ArrowRight':
+      playerMove(1);
+      break;
+    case 'ArrowDown':
+      playerDrop();
+      break;
+    case 'ArrowUp':
+      playerRotate(1);
+      break;
+    case 'p':
+    case 'P':
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Продолжить' : 'Пауза';
+      break;
+  }
+});
+
