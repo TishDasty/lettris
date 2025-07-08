@@ -66,24 +66,25 @@ const pieces = {
   ]
 };
 
-// Загрузка картинок для блоков
-const blockImages = [];
-for(let i = 1; i <= 7; i++){
-  blockImages[i] = new Image();
-  blockImages[i].src = `img/I.png`; // Убедись, что пути и имена совпадают с твоими файлами
-}
+const pieceNames = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+const blockImages = {};
+// Загружаем картинки по имени фигуры
+pieceNames.forEach(name => {
+  const img = new Image();
+  img.src = `img/I.png`; // Пути к твоим файлам: I.png, J.png и т.д.
+  blockImages[name] = img;
+});
 
-// Функция отрисовки матрицы с картинками
 function drawMatrix(matrix, offset) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
       if(value !== 0){
-        const img = blockImages[value];
+        const name = pieceIndexToName[value]; // получаем букву фигуры по номеру
+        const img = blockImages[name];
         if(img && img.complete){
-          // Учитываем масштаб 20, чтобы размер блока был 20x20 пикселей
           context.drawImage(img, (x + offset.x) * 20, (y + offset.y) * 20, 20, 20);
         } else {
-          // Если картинка еще не загрузилась, рисуем цветной квадрат-заглушку
+          // Если картинка не загрузилась — рисуем заглушку
           context.fillStyle = '#ccc';
           context.fillRect(x + offset.x, y + offset.y, 1, 1);
           context.strokeStyle = '#222';
