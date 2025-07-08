@@ -1,4 +1,5 @@
 'use strict';
+const blockImages = {};
 
 ['I', 'J', 'L', 'O', 'S', 'T', 'Z'].forEach(type => {
   const img = new Image();
@@ -86,7 +87,7 @@ const pieces = {
 };
 
 const pieceNames = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
-const blockImages = {};
+
 // Загружаем картинки по имени фигуры
 pieceNames.forEach(name => {
   const img = new Image();
