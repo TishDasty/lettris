@@ -88,13 +88,6 @@ const pieces = {
 
 const pieceNames = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
 
-// Загружаем картинки по имени фигуры
-pieceNames.forEach(name => {
-  const img = new Image();
-  img.src = `img/I.png`; // Пути к твоим файлам: I.png, J.png и т.д.
-  blockImages[name] = img;
-});
-
 // Отрисовка матрицы (игрового поля или фигуры)
 function drawMatrix(matrix, offset) {
   matrix.forEach((row, y) => {
