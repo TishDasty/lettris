@@ -236,4 +236,185 @@ function rotate(piece) {
 }
 
 function matrixWidth(piece) {
-  return
+  return piece.rotations[piece.rotationIndex][0].length;
+}
+
+function matrixHeight(piece) {
+  return piece.rotations[piece.rotationIndex].length;
+}
+
+function clearLines() {
+  let lines = 0;
+  for(let y = ROWS -1; y >=0; y--) {
+    if(grid[y].every(cell => cell !== 0)) {
+      grid.splice(y, 1);
+      grid.unshift(new Array(COLS).fill(0));
+      lines++;
+      y++;
+    }
+  }
+  if(lines > 0) {
+    linesCleared += lines;
+    score += (lines * 100) * level;
+    if(linesCleared >= level * 10) {
+      level++;
+      dropInterval = SPEEDS[Math.min(level - 1, SPEEDS.length - 1)];
+    }
+    updateScoreboard();
+  }
+}
+
+function updateScoreboard() {
+  scoreboard.textContent = `Очки: ${score} | Уровень: ${level}`;
+}
+
+function newPiece() {
+  const types = Object.keys(PIECES);
+  const type = types[Math.floor(Math.random() * types.length)];
+  const rotations = PIECES[type];
+  return {
+    type,
+    rotations,
+    rotationIndex: 0
+  };
+}
+
+function resetGame() {
+  grid = createGrid();
+  currentPiece = newPiece();
+  currentX = Math.floor(COLS / 2) - Math.floor(matrixWidth(currentPiece) / 2);
+  currentY = -matrixHeight(currentPiece);
+  dropCounter = 0;
+  dropInterval = SPEEDS[0];
+  score = 0;
+  level = 1;
+  linesCleared = 0;
+  paused = false;
+  gameOver = false;
+  updateScoreboard();
+}
+
+function drop() {
+  if(paused || gameOver) return;
+  if(!collide(currentPiece, currentX, currentY + 1)) {
+    currentY++;
+  } else {
+    merge(currentPiece, currentX, currentY);
+    clearLines();
+    currentPiece = newPiece();
+    currentX = Math.floor(COLS / 2) - Math.floor(matrixWidth(currentPiece) / 2);
+    currentY = -matrixHeight(currentPiece);
+    if(collide(currentPiece, currentX, currentY)) {
+      gameOver = true;
+      alert('Игра окончена!');
+      cancelAnimationFrame(animationId);
+      pauseBtn.disabled = true;
+      startBtn.disabled = false;
+      return;
+    }
+  }
+}
+
+function update(time = 0) {
+  if(paused || gameOver) return;
+
+  const deltaTime = time - lastTime;
+  lastTime = time;
+  dropCounter += deltaTime;
+
+  if(dropCounter > dropInterval) {
+    drop();
+    dropCounter = 0;
+  }
+  drawGrid();
+  drawPiece(currentPiece, currentX, currentY);
+
+  animationId = requestAnimationFrame(update);
+}
+
+// Управление
+
+function move(dir) {
+  if(paused || gameOver) return;
+  if(!collide(currentPiece, currentX + dir, currentY)) {
+    currentX += dir;
+  }
+}
+
+function hardDrop() {
+  while(!collide(currentPiece, currentX, currentY +1)) {
+    currentY++;
+  }
+  drop();
+}
+
+function rotatePiece() {
+  if(paused || gameOver) return;
+  rotate(currentPiece);
+}
+
+startBtn.addEventListener('click', () => {
+  if(gameOver) resetGame();
+  paused = false;
+  startBtn.disabled = true;
+  pauseBtn.disabled = false;
+  lastTime = 0;
+  update();
+});
+
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  if(!paused) {
+    lastTime = 0;
+    update();
+  }
+});
+
+window.addEventListener('keydown', (e) => {
+  if(gameOver || paused) return;
+  switch(e.key) {
+    case 'ArrowLeft': move(-1); break;
+    case 'ArrowRight': move(1); break;
+    case 'ArrowDown': drop(); break;
+    case 'ArrowUp': rotatePiece(); break;
+    case ' ': hardDrop(); break;
+  }
+});
+
+// Сенсорное управление (свайпы и тап)
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+
+canvas.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchStartTime = Date.now();
+  e.preventDefault();
+});
+canvas.addEventListener('touchend', e => {
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+  const dt = Date.now() - touchStartTime;
+
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  const TAP_MAX_TIME = 200;
+  const TAP_MAX_DISTANCE = 10;
+
+  if(absDx < TAP_MAX_DISTANCE && absDy < TAP_MAX_DISTANCE && dt < TAP_MAX_TIME) {
+    rotatePiece();
+  } else if(absDx > absDy) {
+    // горизонтальный свайп
+    if(dx > 0) move(1);
+    else move(-1);
+  } else {
+    // вертикальный свайп
+    if(dy > 0) drop();
+  }
+
+  e.preventDefault();
+});
+
