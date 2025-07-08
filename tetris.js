@@ -12,6 +12,7 @@ const rightBtn = document.getElementById('rightBtn');
 const downBtn = document.getElementById('downBtn');
 const rotateBtn = document.getElementById('rotateBtn');
 const scoreElem = document.getElementById('score');
+const hardDropBtn = document.getElementById('hardDropBtn');
 
 const arenaWidth = 12;
 const arenaHeight = 20;
@@ -26,6 +27,18 @@ function createMatrix(w, h) {
 }
 
 const arena = createMatrix(arenaWidth, arenaHeight);
+
+function playerHardDrop() {
+  while(!collide(arena, player)){
+    player.pos.y++;
+  }
+  player.pos.y--; // отступаем назад на 1, чтобы не было коллизии
+  merge(arena, player);
+  arenaSweep();
+  playerReset();
+  dropCounter = 0;
+}
+
 
 // Фигуры: 7 классических
 const pieces = {
@@ -365,6 +378,12 @@ document.addEventListener('keydown', event => {
     playerDrop();
   } else if(event.key === 'ArrowUp'){
     playerRotate(1);
+  }
+});
+
+hardDropBtn.addEventListener('click', () => {
+  if(gameRunning && !paused){
+    playerHardDrop();
   }
 });
 
