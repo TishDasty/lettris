@@ -3,25 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Telegram Tetris WebApp</title>
+<title>Тетрис</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <h1>Тетрис для Telegram WebApp</h1>
+<button id="startBtn">Старт</button>
+<canvas id="tetris" width="240" height="400"></canvas>
 
-<div id="game-container">
-  <canvas id="game" width="300" height="600"></canvas>
-</div>
-
-<div id="controls">
-  <button id="start-btn">Старт</button>
-  <button id="pause-btn" disabled>Пауза</button>
-</div>
-
-<div id="scoreboard">Очки: 0 | Уровень: 1</div>
+<div id="scoreContainer">Очки: <span id="score">0</span></div>
 
 <script src="tetris.js"></script>
-
 </body>
 </html>
