@@ -296,7 +296,6 @@ startBtn.addEventListener('click', () => {
     linesCleared = 0;
     level = 1;
     dropInterval = 1000;
-    dropCounter = 0;
     updateScore();
     arena.forEach(row => row.fill(0));
     playerReset();
@@ -326,60 +325,72 @@ rotateBtn.addEventListener('click', () => {
   if(gameRunning && !paused) playerRotate(1);
 });
 
-// Поддержка клавиатуры
 document.addEventListener('keydown', event => {
   if(!gameRunning || paused) return;
-  switch(event.key){
-    case 'ArrowLeft':
-      playerMove(-1);
-      break;
-    case 'ArrowRight':
-      playerMove(1);
-      break;
-    case 'ArrowDown':
-      playerDrop();
-      break;
-    case 'ArrowUp':
-      playerRotate(1);
-      break;
-    case 'p':
-    case 'P':
-      paused = !paused;
-      pauseBtn.textContent = paused ? 'Продолжить' : 'Пауза';
-      break;
+  if(event.key === 'ArrowLeft'){
+    playerMove(-1);
+  } else if(event.key === 'ArrowRight'){
+    playerMove(1);
+  } else if(event.key === 'ArrowDown'){
+    playerDrop();
+  } else if(event.key === 'ArrowUp'){
+    playerRotate(1);
   }
 });
+
+// Сенсорное управление — свайпы и тап
 let touchStartX = 0;
 let touchStartY = 0;
 
-gameCanvas.addEventListener("touchstart", (e) => {
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-}, { passive: true });
+canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+        e.preventDefault(); // запрет масштабирования
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    }
+}, { passive: false });
 
-gameCanvas.addEventListener("touchend", (e) => {
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartX;
-    const dy = touch.clientY - touchStartY;
+canvas.addEventListener("touchend", (e) => {
+    if (e.changedTouches.length === 1) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
 
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
 
-    if (Math.max(absDx, absDy) > 20) { // минимальный свайп
-        if (absDx > absDy) {
-            if (dx > 0) {
-                moveRight(); // свайп вправо
+        const minSwipeDistance = 20; // минимальный порог свайпа
+
+        if (Math.max(absDx, absDy) > minSwipeDistance) {
+            if (absDx > absDy) {
+                if (dx > 0) {
+                    playerMove(1); // свайп вправо
+                } else {
+                    playerMove(-1); // свайп влево
+                }
             } else {
-                moveLeft(); // свайп влево
+                if (dy > 0) {
+                    playerDrop(); // свайп вниз — ускорить падение
+                } else {
+                    playerRotate(1); // свайп вверх — поворот
+                }
             }
         } else {
-            if (dy > 0) {
-                moveDown(); // свайп вниз — ускорить
-            } else {
-                rotate(); // свайп вверх — поворот
-            }
+            // Это короткий тап — поворот
+            playerRotate(1);
         }
     }
-}, { passive: true });
+}, { passive: false });
+
+// Запрет масштабирования страницы двойным тапом
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  const now = (new Date()).getTime();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
 
