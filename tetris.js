@@ -89,24 +89,20 @@ const pieces = {
 const pieceNames = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
 
 // Отрисовка матрицы (игрового поля или фигуры)
-function drawMatrix(matrix, offset) {
+function drawArena(matrix, offset) {
   matrix.forEach((row, y) => {
     row.forEach((value, x) => {
-      if(value !== 0){
-        // Найдем тип фигуры по числу (значению)
-        const type = getTypeByValue(value); // функция ниже
-
-        // Если есть картинка — рисуем её
-        if(blockImages[type] && blockImages[type].complete){
+      if (value !== 0) {
+        const type = getTypeByValue(value);
+        if (blockImages[type] && blockImages[type].complete) {
           context.drawImage(
             blockImages[type],
-            (x + offset.x) * 20,  // 20 — масштаб (помни, что у тебя context.scale(20,20))
+            (x + offset.x) * 20,
             (y + offset.y) * 20,
             20,
             20
           );
         } else {
-          // Если картинки нет — рисуем цветной квадрат (фолбек)
           context.fillStyle = colors[value];
           context.fillRect(x + offset.x, y + offset.y, 1, 1);
           context.strokeStyle = '#222';
@@ -117,6 +113,27 @@ function drawMatrix(matrix, offset) {
     });
   });
 }
+
+function drawPlayer(player) {
+  const matrix = player.matrix;
+  const value = matrix.flat().find(v => v !== 0); // Получаем число: 1–7
+  const type = getTypeByValue(value);
+  const img = blockImages[type];
+  if (img && img.complete) {
+    const w = matrix[0].length;
+    const h = matrix.length;
+    context.drawImage(
+      img,
+      player.pos.x * 20,
+      player.pos.y * 20,
+      w * 20,
+      h * 20
+    );
+  } else {
+    drawArena(matrix, player.pos); // fallback
+  }
+}
+
 
 function getTypeByValue(value) {
   switch(value) {
@@ -170,8 +187,8 @@ function clear() {
 // Отрисовка сцены
 function draw() {
   clear();
-  drawMatrix(arena, {x:0, y:0});
-  drawMatrix(player.matrix, player.pos);
+  drawArena(arena, { x: 0, y: 0 });
+  drawPlayer(player);
 }
 
 // Проверка столкновений
