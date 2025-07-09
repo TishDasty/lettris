@@ -3,9 +3,12 @@ const blockImages = {};
 
 ['I', 'J', 'L', 'O', 'S', 'T', 'Z'].forEach(type => {
   const img = new Image();
-  img.src = `img/${type}.png`; // путь к картинке
+  img.src = `img/${type}.png`;
+  img.onload = () => console.log(`✅ Картинка ${type}.png загружена`);
+  img.onerror = () => console.error(`❌ Ошибка загрузки img/${type}.png`);
   blockImages[type] = img;
 });
+
 
 // Получаем элементы
 const canvas = document.getElementById('tetris');
